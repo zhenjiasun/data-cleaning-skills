@@ -73,17 +73,20 @@ Ensuring training data does not lie to your model.
 
 ## Does this actually help?
 
-See [`evals/`](evals/) for a small head-to-head comparing each skill against a plain "clean this for me" prompt on the same dirty dataset. Single-shot results scored against a 12-point rubric:
+See [`evals/`](evals/) for a head-to-head comparing each skill against a plain "clean this for me" prompt on the same dirty dataset. Real outputs from `claude-opus-4-7`, scored against a 12-point rubric:
 
-| Case | Baseline | Skilled |
-| --- | --- | --- |
-| profile-dataset | 3/12 | 12/12 |
-| clean-datetime-fields | 3/12 | 12/12 |
-| validate-join | 2/12 | 12/12 |
-| detect-data-leakage | 3/12 | 12/12 |
-| resolve-entities | 5/12 | 12/12 |
+| Case | Baseline | Skilled | Δ |
+| --- | --- | --- | --- |
+| profile-dataset | 8/12 | 12/12 | +4 |
+| clean-datetime-fields | 10/12 | 12/12 | +2 |
+| validate-join | 10/12 | 11/12 | +1 |
+| detect-data-leakage | 12/12 | 12/12 | 0 |
+| resolve-entities | 7/12 | 12/12 | +5 |
+| **Total** | **47/60 (78%)** | **59/60 (98%)** | **+20pp** |
 
-[Read the summary](evals/summary.md) — the lift comes mostly from blocking five recurring failure patterns: silent fabrication, wrong-default time zones, silent join fanout, label leakage, and destructive deduplication. Caveats and methodology are documented; a runner script is included so you can re-run with multiple samples and other models.
+The lift is real but modest, and concentrated in tasks that reward **discipline** (entity resolution, profile-before-clean) and **convention awareness** (`tz_convert` vs `tz_localize`). On tasks the frontier model already does well (leakage audits, SCD2 joins), the skill is redundant or close to it. [Read the full summary](evals/summary.md) for caveats and where each point came from.
+
+You can reproduce the runs without an API key — `evals/run.sh` uses your existing Claude Code login.
 
 ## Recommended starter set
 

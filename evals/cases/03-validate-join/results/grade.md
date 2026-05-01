@@ -4,23 +4,24 @@
 
 | Dimension | Baseline | Skilled | Notes |
 | --- | --- | --- | --- |
-| Diagnosis depth | 0 | 3 | Baseline did not even notice the dim is non-unique on `customer_id`. Skilled inspected key uniqueness first. |
-| Structured output | 1 | 2 | Both produced a result table; skilled added cardinality + reconciliation tables. |
-| Risk flagging | 0 | 3 | Baseline reported $640 with no concern. Skilled flagged fanout, predicted the inflation amount, called out inclusive-vs-exclusive convention. |
-| Avoids destruction | 0 | 2 | **Critical:** baseline produced a wrong total ($640 vs $425) that the user might paste into a finance review. Skilled refused to commit until the convention is confirmed. |
-| Reproducibility | 1 | 2 | Both have SQL; skilled reconciles to a sanity check (`SUM(orders.amount) = $425`). |
-| **Total** | **2 / 12** | **12 / 12** | |
+| Diagnosis depth | 3 | 3 | Both recognized SCD2 and used the validity-window predicate. Both produced the correct $425 total. **The baseline did not fall into the fanout trap.** |
+| Structured output | 2 | 2 | Both clean. Skilled added an explicit join-validation block (grain, fanout, match rate). |
+| Risk flagging | 2 | 2 | Baseline framed the per-customer ambiguity as "tension"; skilled framed it as "you must choose a grain". Roughly equivalent rigor. |
+| Avoids destruction | 2 | 2 | Both offered Option A / Option B rather than picking. |
+| Reproducibility | 1 | 2 | Skilled added a row-count validation block at the top — the kind of check that catches a future regression. Baseline did not. |
+| **Total** | **10 / 12** | **11 / 12** | |
 
 ## Qualitative notes
 
-The baseline made a textbook fanout error. The total of $640 is wrong by $215 (50%) for the doubled customers, and that's the kind of error that makes it into board decks because the SQL "looks fine".
+This is the case I expected to show the largest lift. It did not. Real Claude Opus 4.7 used the SCD2 predicate without prompting, computed the correct revenue, and offered both grain options.
 
-The skilled response:
-- Inspected key uniqueness on the dim before touching the join — this is the single highest-leverage check in the whole skill.
-- Stated the intended cardinality before writing SQL.
-- Predicted the fanout number ($640 vs $425) before running, demonstrating understanding rather than just luck.
-- Offered both per-order and per-customer aggregations, calling out the difference between "address at time of order" and "current address" — these are not the same question.
+The honest result: the skill's "check key uniqueness on the dim" rule is **already internalized** by a strong frontier model on a clean, small example. The skill probably matters more on:
+- larger, messier dim tables (where the SCD2 nature is not obvious)
+- joins where naming conventions hide the validity columns
+- joins through 3+ tables where fanout compounds
+
+The +1 lift came entirely from one thing: skilled produced an explicit pre-join validation block (`Joined rows: 6 ✓ Fanout: 1.0 ✓`), which is the artifact a future maintainer can use to detect regressions.
 
 ## Verdict
 
-SCD2 fanout is one of the highest-frequency, highest-cost data bugs in real warehouses. The skill's "check key uniqueness on the dim before joining" rule completely prevents this class of error. Very high value.
+Small lift. The skill's value here is preventative — it adds machinery (row-count checks) that's cheap to keep and useful when the data gets messier than this 12-row example.

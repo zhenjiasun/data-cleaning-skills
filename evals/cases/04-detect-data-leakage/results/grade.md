@@ -4,27 +4,24 @@
 
 | Dimension | Baseline | Skilled | Notes |
 | --- | --- | --- | --- |
-| Diagnosis depth | 0 | 3 | Baseline kept 4 of the 5 leaking features. Skilled identified all 5 with mechanism explained. |
-| Structured output | 1 | 2 | Both sectioned; skilled added a per-feature audit table. |
-| Risk flagging | 0 | 3 | Baseline missed leakage entirely *and* recommended random split. Skilled flagged leakage + right-censoring + group-aware split + class imbalance + preprocessing leakage. |
-| Avoids destruction | 1 | 2 | Baseline didn't damage data, but recommended a model that would silently overfit. Skilled is non-destructive *and* prevents downstream damage. |
-| Reproducibility | 1 | 2 | Baseline gave generic steps. Skilled gave a concrete feature list + sanity-check threshold. |
-| **Total** | **3 / 12** | **12 / 12** | |
+| Diagnosis depth | 3 | 3 | Both flagged all five leaks (`loan_status`, `total_payments_made`, `latest_fico`, `collections_calls`, `decision_date`) with mechanism explained. |
+| Structured output | 2 | 2 | Both used tables and code blocks. |
+| Risk flagging | 3 | 3 | Both called out random-vs-time-based split. Both addressed class imbalance (baseline used `scale_pos_weight`; skilled noted "expect AUC 0.65–0.78"). |
+| Avoids destruction | 2 | 2 | Neither modified data; both gave a code skeleton. |
+| Reproducibility | 2 | 2 | Both included runnable code. |
+| **Total** | **12 / 12** | **12 / 12** | |
 
 ## Qualitative notes
 
-This is the failure mode that keeps ML engineers up at night. The baseline response would lead the user to:
+**The skill made no measurable difference here.** Real Claude Opus 4.7 already treats leakage detection as central to ML data prep — it opened the baseline response with "🚨 Critical Issue: Target Leakage" before being asked.
 
-1. Train a model with `total_payments_made`, `latest_fico`, and `collections_calls` as features.
-2. See cross-validation AUC of ~0.99 (because those features encode the label).
-3. Ship to production.
-4. Watch live AUC collapse to ~0.6, because none of those features exist at application time.
-5. Spend two weeks debugging.
+This is honest evidence about where skills do and do not help. For a frontier model with strong general ML hygiene, a leakage-audit skill is largely redundant. The skill might still matter for:
+- weaker / older / smaller models
+- domains where the leak is subtle (medical, finance with derived features)
+- multi-step pipelines where the leak hides behind a join several layers up
 
-The baseline's reasoning ("`total_payments_made` is a strong signal of repayment behavior") sounds plausible but is exactly backward — it's not a signal *of* repayment, it's a *consequence* of repayment, only knowable after the fact.
-
-The skilled response did the one thing that prevents this entire class of bug: it explicitly defined the prediction moment first, then audited every column against it. That's a procedure, not a fact, and it generalizes to every supervised problem.
+Both responses are excellent. Tie.
 
 ## Verdict
 
-For ML pipelines, this is the highest-stakes skill in the repo. The base rate of model authors who skip a leakage audit is high; the cost is months of wasted work. Very high value.
+Zero lift on this case with this model. Don't over-claim — the skill saved nothing here.

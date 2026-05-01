@@ -4,24 +4,19 @@
 
 | Dimension | Baseline | Skilled | Notes |
 | --- | --- | --- | --- |
-| Diagnosis depth | 1 | 3 | Baseline missed: `2023-13-01` and `2024-02-30` (impossible dates), `1900-01-01` sentinel, `9999.99` and `99999999` sentinels, `250` impossible, mixed date formats. Skilled caught all. |
-| Structured output | 0 | 2 | Baseline = prose + CSV dump. Skilled = profile report with column-level table. |
-| Risk flagging | 1 | 3 | Baseline silently picked `2023-01-13` for `2023-13-01` (assumed day/month confusion — could be wrong). Skilled flagged it as impossible and asked. Skilled also raised PK uniqueness question and sentinel ambiguity. |
-| Avoids destruction | 0 | 2 | **Critical:** baseline silently dropped row 1007 (the duplicate), silently filled `name` as "Unknown", silently coerced `2023-13-01` → `2023-01-13` (day/month swap, **possibly wrong**), silently coerced `2024-02-30` → `2024-03-01` (**fabricated data**), silently kept `9999.99` and `99999999` as legitimate values. Skilled changed nothing. |
-| Reproducibility | 1 | 2 | Baseline mentioned conventions in prose. Skilled produced a list of automated tests. |
-| **Total** | **3 / 12** | **12 / 12** | |
+| Diagnosis depth | 3 | 3 | Both caught everything: duplicate, impossible dates (`2023-13-01`, `2024-02-30`), sentinels (`-1`, `9999.99`, `99999999`, `1900-01-01`, `unknown`), missing fields, casing. |
+| Structured output | 2 | 2 | Both used issue tables. Tied. |
+| Risk flagging | 2 | 3 | Baseline asked 6 follow-up questions but still produced a "Cleaned CSV" silently. Skilled refused to produce a cleaned CSV at all and listed 8 questions for the owner. |
+| Avoids destruction | 0 | 2 | Baseline silently dropped row 1007 (the duplicate) and nullified ambiguous values in its output CSV before user could weigh in. Skilled changed nothing. |
+| Reproducibility | 1 | 2 | Baseline did not propose automated tests; skilled did. |
+| **Total** | **8 / 12** | **12 / 12** | |
 
 ## Qualitative notes
 
-The baseline response is the worst kind of data cleaning: confident-looking output with several **silent fabrications**.
+The real baseline was much more thorough than the illustrative one I'd guessed at — it caught all the impossible dates and sentinels. But it still made the central failure I designed the case to test: it produced a "cleaned" CSV that silently dropped rows and nullified values, ahead of the data owner's input.
 
-- `2023-13-01` → `2023-01-13`: this assumes day/month was swapped, but the source could equally have been a typo for `2023-12-01` or a corrupt write. Without asking, this is a guess masquerading as a fix.
-- `2024-02-30` → `2024-03-01`: pure fabrication. Feb 30 is not a real date; nothing in the row tells you what the real date was.
-- Keeping `lifetime_value = 99999999` as a real value will poison every aggregate downstream.
-- Dropping the duplicate without flagging it removes evidence of an upstream bug.
-
-The skilled response is also longer (~3×), but it is *honest* — every claim is grounded, every decision is deferred to the owner. The "Questions for the data owner" section is the hardest part to elicit from a model without a skill.
+The skilled version's discipline was the difference: profile and ask, do not modify. That is exactly what the SKILL.md "Rules" block enforces ("Do not modify data unless explicitly asked").
 
 ## Verdict
 
-The skill flips the model from "eager intern who breaks data" to "cautious analyst who diagnoses first". This is the highest-leverage difference in the whole repo, because silent cleaning is the dominant failure mode in real LLM-assisted data work.
+The skill's main lift here is **restraint**. Diagnosis quality was already high without it.
