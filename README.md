@@ -71,6 +71,20 @@ Ensuring training data does not lie to your model.
 | [clean-features](skills/machine-learning-data/clean-features/SKILL.md) | Prepare numeric/categorical features for modeling |
 | [encode-categorical-features](skills/machine-learning-data/encode-categorical-features/SKILL.md) | Choose between one-hot, target, hash, embedding |
 
+## Does this actually help?
+
+See [`evals/`](evals/) for a small head-to-head comparing each skill against a plain "clean this for me" prompt on the same dirty dataset. Single-shot results scored against a 12-point rubric:
+
+| Case | Baseline | Skilled |
+| --- | --- | --- |
+| profile-dataset | 3/12 | 12/12 |
+| clean-datetime-fields | 3/12 | 12/12 |
+| validate-join | 2/12 | 12/12 |
+| detect-data-leakage | 3/12 | 12/12 |
+| resolve-entities | 5/12 | 12/12 |
+
+[Read the summary](evals/summary.md) — the lift comes mostly from blocking five recurring failure patterns: silent fabrication, wrong-default time zones, silent join fanout, label leakage, and destructive deduplication. Caveats and methodology are documented; a runner script is included so you can re-run with multiple samples and other models.
+
 ## Recommended starter set
 
 If you are bootstrapping this for a team, start with these twelve. They cover the highest-frequency dirty-data problems in real engineering and ML work:
